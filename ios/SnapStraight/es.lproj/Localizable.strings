@@ -1,0 +1,12 @@
+/* Español */
+"app_name" = "Snap Straight";
+"app_name_en" = "Snap Straight";
+"btn_take_photo" = "Tomar Foto";
+"btn_select_photo" = "Seleccionar Foto";
+"btn_save" = "Guardar";
+"btn_back" = "Volver";
+"processing" = "Procesando…";
+"save_success" = "Guardado en galería";
+"save_failed" = "Error al guardar";
+"permission_camera" = "Se requiere permiso de cámara para tomar fotos";
+"permission_storage" = "Se requiere permiso de biblioteca de fotos para guardar imágenes";

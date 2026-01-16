@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 简体中文 -->
+    <string name="app_name">随手正一正</string>
+    <string name="app_name_en">Snap Straight</string>
+    <string name="btn_take_photo">拍照</string>
+    <string name="btn_select_photo">选图</string>
+    <string name="btn_save">保存</string>
+    <string name="btn_back">返回</string>
+    <string name="processing">正在处理…</string>
+    <string name="save_success">已保存到相册</string>
+    <string name="save_failed">保存失败</string>
+    <string name="permission_camera">需要相机权限才能拍照</string>
+    <string name="permission_storage">需要存储权限才能保存图片</string>
+</resources>

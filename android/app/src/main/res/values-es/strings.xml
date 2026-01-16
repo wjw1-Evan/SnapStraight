@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Español -->
+    <string name="app_name">Snap Straight</string>
+    <string name="app_name_en">Snap Straight</string>
+    <string name="btn_take_photo">Tomar Foto</string>
+    <string name="btn_select_photo">Seleccionar Foto</string>
+    <string name="btn_save">Guardar</string>
+    <string name="btn_back">Volver</string>
+    <string name="processing">Procesando…</string>
+    <string name="save_success">Guardado en galería</string>
+    <string name="save_failed">Error al guardar</string>
+    <string name="permission_camera">Se requiere permiso de cámara para tomar fotos</string>
+    <string name="permission_storage">Se requiere permiso de almacenamiento para guardar imágenes</string>
+</resources>

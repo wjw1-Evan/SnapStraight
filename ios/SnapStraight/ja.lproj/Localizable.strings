@@ -1,0 +1,12 @@
+/* 日本語 */
+"app_name" = "スナップストレート";
+"app_name_en" = "Snap Straight";
+"btn_take_photo" = "撮影";
+"btn_select_photo" = "写真を選択";
+"btn_save" = "保存";
+"btn_back" = "戻る";
+"processing" = "処理中…";
+"save_success" = "ギャラリーに保存しました";
+"save_failed" = "保存に失敗しました";
+"permission_camera" = "写真を撮るにはカメラの許可が必要です";
+"permission_storage" = "画像を保存するにはフォトライブラリの許可が必要です";

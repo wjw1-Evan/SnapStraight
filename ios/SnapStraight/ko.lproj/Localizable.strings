@@ -1,0 +1,12 @@
+/* 한국어 */
+"app_name" = "스냅 스트레이트";
+"app_name_en" = "Snap Straight";
+"btn_take_photo" = "사진 촬영";
+"btn_select_photo" = "사진 선택";
+"btn_save" = "저장";
+"btn_back" = "뒤로";
+"processing" = "처리 중…";
+"save_success" = "갤러리에 저장되었습니다";
+"save_failed" = "저장 실패";
+"permission_camera" = "사진을 촬영하려면 카메라 권한이 필요합니다";
+"permission_storage" = "이미지를 저장하려면 사진 라이브러리 권한이 필요합니다";

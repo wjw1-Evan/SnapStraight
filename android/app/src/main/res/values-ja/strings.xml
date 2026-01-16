@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 日本語 -->
+    <string name="app_name">スナップストレート</string>
+    <string name="app_name_en">Snap Straight</string>
+    <string name="btn_take_photo">撮影</string>
+    <string name="btn_select_photo">写真を選択</string>
+    <string name="btn_save">保存</string>
+    <string name="btn_back">戻る</string>
+    <string name="processing">処理中…</string>
+    <string name="save_success">ギャラリーに保存しました</string>
+    <string name="save_failed">保存に失敗しました</string>
+    <string name="permission_camera">写真を撮るにはカメラの許可が必要です</string>
+    <string name="permission_storage">画像を保存するにはストレージの許可が必要です</string>
+</resources>

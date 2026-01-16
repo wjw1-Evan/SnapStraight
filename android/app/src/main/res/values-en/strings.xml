@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- English -->
+    <string name="app_name">Snap Straight</string>
+    <string name="app_name_en">Snap Straight</string>
+    <string name="btn_take_photo">Take Photo</string>
+    <string name="btn_select_photo">Select Photo</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_back">Back</string>
+    <string name="processing">Processing…</string>
+    <string name="save_success">Saved to gallery</string>
+    <string name="save_failed">Failed to save</string>
+    <string name="permission_camera">Camera permission is required to take photos</string>
+    <string name="permission_storage">Storage permission is required to save images</string>
+</resources>
