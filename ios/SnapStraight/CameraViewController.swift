@@ -18,6 +18,13 @@ class CameraViewController: UIViewController {
     private var hasDetectedRectangle = false
     private var isSessionConfigured = false
     private var lastNormalizedQuad: NormalizedQuad?
+    
+    // Auto-Capture Properties
+    private var stabilityCounter = 0
+    private let stabilityThreshold = 15 // frames, approx 0.5s at 30fps
+    private var isAutoCapturing = false
+    private let progressLayer = CAShapeLayer()
+
 
     private let backButton = UIButton(type: .system)
     private let captureButton = UIButton(type: .system)
@@ -26,6 +33,11 @@ class CameraViewController: UIViewController {
         super.viewDidLoad()
         checkCameraAuthorization()
         setupUI()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateProgressFrame()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -99,6 +111,10 @@ class CameraViewController: UIViewController {
         videoOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
         if session.canAddOutput(videoOutput) {
             session.addOutput(videoOutput)
+            // Explicitly set video orientation to portrait to align with Vision coordinates
+            if let connection = videoOutput.connection(with: .video), connection.isVideoOrientationSupported {
+                connection.videoOrientation = .portrait
+            }
             self.videoOutput = videoOutput
         } else {
             handleCameraUnavailable(reason: NSLocalizedString("camera_unavailable", comment: ""))
@@ -139,6 +155,8 @@ class CameraViewController: UIViewController {
         detectionOverlay.lineJoin = .round
         detectionOverlay.frame = view.bounds
         view.layer.addSublayer(detectionOverlay)
+        
+        setupProgressLayer()
     }
 
     private func setupUI() {
@@ -218,6 +236,11 @@ extension CameraViewController: AVCapturePhotoCaptureDelegate {
             initialQuad: lastNormalizedQuad?.asProcessorQuad()
         )
         self.navigationController?.pushViewController(resultVC, animated: true)
+        
+        // Reset state
+        isAutoCapturing = false
+        stabilityCounter = 0
+        updateProgressLayer()
     }
 }
 
@@ -227,13 +250,16 @@ extension CameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
         _ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
+        // Ensure connection orientation is correct (double check)
+        if connection.videoOrientation != .portrait {
+            connection.videoOrientation = .portrait
+        }
         guard !isProcessingFrame,
             let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
         else { return }
         isProcessingFrame = true
-        let orientation = CGImagePropertyOrientation(
-            deviceOrientation: UIDevice.current.orientation)
-        let observation = detectRectangle(in: pixelBuffer, orientation: orientation)
+        // Input is now guaranteed portrait, so use .up to match
+        let observation = detectRectangle(in: pixelBuffer, orientation: .up)
         DispatchQueue.main.async { [weak self] in
             self?.updateOverlay(with: observation)
         }
@@ -251,14 +277,24 @@ extension CameraViewController {
             hasDetectedRectangle = false
             updateCaptureButtonState(enabled: false)
             lastNormalizedQuad = nil
+            
+            // Reset auto capture
+            stabilityCounter = 0
+            updateProgressLayer()
             return
         }
         let smoothed = smoothQuad(with: obs)
         let path = UIBezierPath()
-        let tl = previewLayer.layerPointConverted(fromCaptureDevicePoint: smoothed.topLeft)
-        let tr = previewLayer.layerPointConverted(fromCaptureDevicePoint: smoothed.topRight)
-        let br = previewLayer.layerPointConverted(fromCaptureDevicePoint: smoothed.bottomRight)
-        let bl = previewLayer.layerPointConverted(fromCaptureDevicePoint: smoothed.bottomLeft)
+        
+        // Vision coordinates are normalized with (0,0) at bottom-left.
+        // CaptureDevicePoint coordinates are normalized with (0,0) at top-left.
+        // We need to flip Y.
+        func flipY(_ p: CGPoint) -> CGPoint { CGPoint(x: p.x, y: 1 - p.y) }
+        
+        let tl = previewLayer.layerPointConverted(fromCaptureDevicePoint: flipY(smoothed.topLeft))
+        let tr = previewLayer.layerPointConverted(fromCaptureDevicePoint: flipY(smoothed.topRight))
+        let br = previewLayer.layerPointConverted(fromCaptureDevicePoint: flipY(smoothed.bottomRight))
+        let bl = previewLayer.layerPointConverted(fromCaptureDevicePoint: flipY(smoothed.bottomLeft))
         path.move(to: tl)
         path.addLine(to: tr)
         path.addLine(to: br)
@@ -270,6 +306,28 @@ extension CameraViewController {
             hasDetectedRectangle = true
             updateCaptureButtonState(enabled: true)
         }
+
+        // Auto Capture Logic
+        if !isAutoCapturing {
+            if stabilityCounter >= stabilityThreshold {
+                triggerAutoCapture()
+            } else {
+                updateProgressLayer()
+            }
+        }
+    }
+
+    private func triggerAutoCapture() {
+        guard !isAutoCapturing else { return }
+        isAutoCapturing = true
+        stabilityCounter = 0
+        updateProgressLayer()
+        
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.impactOccurred()
+        
+        let settings = AVCapturePhotoSettings()
+        photoOutput?.capturePhoto(with: settings, delegate: self)
     }
 
     private func smoothQuad(with obs: VNRectangleObservation) -> NormalizedQuad {
@@ -290,9 +348,19 @@ extension CameraViewController {
         let newCenter = newQuad.center
         let dx = newCenter.x - lastCenter.x
         let dy = newCenter.y - lastCenter.y
-        if sqrt(dx * dx + dy * dy) > 0.3 {
+        let moveDist = sqrt(dx * dx + dy * dy)
+        
+        if moveDist > 0.3 {
             lastNormalizedQuad = newQuad
+            stabilityCounter = 0 // Reset stability if moved too much
             return newQuad
+        }
+        
+        // Check for stability
+        if moveDist < 0.02 { // Very stable
+             stabilityCounter += 1
+        } else if moveDist > 0.05 { // Slightly moving, pause or reset? let's reset to be strict
+             stabilityCounter = 0 // max(0, stabilityCounter - 1)
         }
 
         let alpha: CGFloat = 0.3  // 越小越平滑
@@ -487,6 +555,44 @@ extension CameraViewController {
         return confidence * Float(area * centerWeight * aspectPenalty) * areaBoost
     }
 }
+
+// MARK: - Auto Capture UI
+extension CameraViewController {
+    fileprivate func setupProgressLayer() {
+        progressLayer.strokeColor = UIColor.green.cgColor
+        progressLayer.fillColor = UIColor.clear.cgColor
+        progressLayer.lineWidth = 5
+        progressLayer.lineCap = .round
+        progressLayer.strokeEnd = 0
+        progressLayer.frame = captureButton.bounds
+        
+        // Create circular path matching capture button
+        let path = UIBezierPath(ovalIn: captureButton.bounds.insetBy(dx: -5, dy: -5))
+        progressLayer.path = path.cgPath
+        
+        // Add to capture button's superview so it sits around it
+        captureButton.superview?.layer.addSublayer(progressLayer)
+        // Center it relative to capture button
+        // Since we added it to superview, we need to correct position
+        // Ideally add it to captureButton but it clips. Let's add top level.
+    }
+    
+    fileprivate func updateProgressLayer() {
+        // Re-layout if needed in viewDidLayoutSubviews, but for now just update stroke
+        let progress = CGFloat(stabilityCounter) / CGFloat(stabilityThreshold)
+        progressLayer.strokeEnd = progress
+        
+        if progress > 0 {
+             progressLayer.strokeColor = (stabilityCounter >= stabilityThreshold) ? UIColor.white.cgColor : UIColor.green.cgColor
+        }
+    }
+    
+    fileprivate func updateProgressFrame() {
+        progressLayer.frame = captureButton.frame.insetBy(dx: -8, dy: -8)
+        progressLayer.path = UIBezierPath(ovalIn: progressLayer.bounds).cgPath
+    }
+}
+
 
 extension CGPoint {
     fileprivate func lerp(to: CGPoint, alpha: CGFloat) -> CGPoint {

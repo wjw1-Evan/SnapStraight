@@ -63,8 +63,8 @@ class ImageProcessor {
         // 将 CIImage 按照原始方向矫正，保证坐标系与 Vision 一致
         let ciImage = CIImage(cgImage: cgImage).oriented(orientation)
 
-        // 1. 边缘检测（考虑方向）
-        if let corners = detectRectangle(in: ciImage, orientation: orientation) {
+        // 1. 边缘检测（考虑方向） - ciImage已矫正为Up，故传Up
+        if let corners = detectRectangle(in: ciImage, orientation: .up) {
             // 2. 透视矫正 + 裁剪，仅保留文档区域
             if let corrected = perspectiveCorrect(ciImage, corners: corners) {
                 // 3. 自动提亮
@@ -204,19 +204,19 @@ class ImageProcessor {
         // 转换坐标系（Vision使用标准化坐标，原点在左下角）
         let topLeft = CGPoint(
             x: quad.topLeft.x * imageSize.width,
-            y: (1 - quad.topLeft.y) * imageSize.height
+            y: quad.topLeft.y * imageSize.height
         )
         let topRight = CGPoint(
             x: quad.topRight.x * imageSize.width,
-            y: (1 - quad.topRight.y) * imageSize.height
+            y: quad.topRight.y * imageSize.height
         )
         let bottomRight = CGPoint(
             x: quad.bottomRight.x * imageSize.width,
-            y: (1 - quad.bottomRight.y) * imageSize.height
+            y: quad.bottomRight.y * imageSize.height
         )
         let bottomLeft = CGPoint(
             x: quad.bottomLeft.x * imageSize.width,
-            y: (1 - quad.bottomLeft.y) * imageSize.height
+            y: quad.bottomLeft.y * imageSize.height
         )
 
         // 计算输出图片尺寸
