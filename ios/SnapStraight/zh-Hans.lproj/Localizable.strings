@@ -10,3 +10,4 @@
 "save_failed" = "保存失败";
 "permission_camera" = "需要相机权限才能拍照";
 "permission_storage" = "需要相册权限才能保存图片";
+"hint_no_edges" = "未检测到边缘，请靠近并保持平行";

@@ -1,65 +1,149 @@
-import UIKit
 import AVFoundation
+import UIKit
+import Vision
 
-/**
- * 相机拍摄ViewController
- * 全屏取景，一键拍照，自动进入处理流程
- */
+/// 相机拍摄ViewController
+/// 全屏取景，一键拍照，自动进入处理流程
 class CameraViewController: UIViewController {
-    
+
     private var captureSession: AVCaptureSession?
     private var photoOutput: AVCapturePhotoOutput?
     private var previewLayer: AVCaptureVideoPreviewLayer?
-    
+    private var videoOutput: AVCaptureVideoDataOutput?
+    private let videoDataOutputQueue = DispatchQueue(label: "com.snapstraight.camera.video")
+    private var detectionOverlay = CAShapeLayer()
+    private var isProcessingFrame = false
+    private let detectionHintLabel = UILabel()
+    private var detectionHintWorkItem: DispatchWorkItem?
+    private var hasDetectedRectangle = false
+    private var isSessionConfigured = false
+    private var lastNormalizedQuad: NormalizedQuad?
+
     private let backButton = UIButton(type: .system)
     private let captureButton = UIButton(type: .system)
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupCamera()
+        checkCameraAuthorization()
         setupUI()
     }
-    
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        captureSession?.startRunning()
+        if isSessionConfigured {
+            captureSession?.startRunning()
+        }
     }
-    
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         captureSession?.stopRunning()
     }
-    
+
+    private func checkCameraAuthorization() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            setupCamera()
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        self?.setupCamera()
+                    } else {
+                        self?.handleCameraUnavailable(
+                            reason: NSLocalizedString("camera_permission_denied", comment: ""))
+                    }
+                }
+            }
+        default:
+            handleCameraUnavailable(
+                reason: NSLocalizedString("camera_permission_denied", comment: ""))
+        }
+    }
+
     private func setupCamera() {
         captureSession = AVCaptureSession()
         captureSession?.sessionPreset = .photo
-        
-        guard let backCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
-              let input = try? AVCaptureDeviceInput(device: backCamera),
-              let session = captureSession else {
+
+        guard
+            let backCamera = AVCaptureDevice.default(
+                .builtInWideAngleCamera, for: .video, position: .back),
+            let input = try? AVCaptureDeviceInput(device: backCamera),
+            let session = captureSession
+        else {
+            handleCameraUnavailable(reason: NSLocalizedString("camera_unavailable", comment: ""))
             return
         }
-        
+
         if session.canAddInput(input) {
             session.addInput(input)
+        } else {
+            handleCameraUnavailable(reason: NSLocalizedString("camera_unavailable", comment: ""))
+            return
         }
-        
+
         photoOutput = AVCapturePhotoOutput()
         if let output = photoOutput, session.canAddOutput(output) {
             session.addOutput(output)
+        } else {
+            handleCameraUnavailable(reason: NSLocalizedString("camera_unavailable", comment: ""))
+            return
         }
-        
+
+        // 视频输出用于实时边缘检测
+        let videoOutput = AVCaptureVideoDataOutput()
+        videoOutput.alwaysDiscardsLateVideoFrames = true
+        videoOutput.videoSettings = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+        ]
+        videoOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
+        if session.canAddOutput(videoOutput) {
+            session.addOutput(videoOutput)
+            self.videoOutput = videoOutput
+        } else {
+            handleCameraUnavailable(reason: NSLocalizedString("camera_unavailable", comment: ""))
+            return
+        }
+
         previewLayer = AVCaptureVideoPreviewLayer(session: session)
         previewLayer?.videoGravity = .resizeAspectFill
         previewLayer?.frame = view.bounds
         if let previewLayer = previewLayer {
             view.layer.addSublayer(previewLayer)
         }
+
+        setupDetectionOverlay()
+        isSessionConfigured = true
     }
-    
+
+    private func handleCameraUnavailable(reason: String) {
+        isSessionConfigured = false
+        updateCaptureButtonState(enabled: false)
+        let alert = UIAlertController(
+            title: NSLocalizedString("camera_error_title", comment: ""),
+            message: reason,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: NSLocalizedString("ok", comment: ""), style: .default))
+        // 避免在 view 未加载完时 present
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.presentedViewController == nil else { return }
+            self.present(alert, animated: true)
+        }
+    }
+
+    private func setupDetectionOverlay() {
+        detectionOverlay.strokeColor = UIColor.systemYellow.cgColor
+        detectionOverlay.fillColor = UIColor.clear.cgColor
+        detectionOverlay.lineWidth = 3
+        detectionOverlay.lineJoin = .round
+        detectionOverlay.frame = view.bounds
+        view.layer.addSublayer(detectionOverlay)
+    }
+
     private func setupUI() {
         view.backgroundColor = .black
-        
+
         // 返回按钮
         backButton.setTitle(NSLocalizedString("btn_back", comment: ""), for: .normal)
         backButton.titleLabel?.font = UIFont.systemFont(ofSize: 20, weight: .medium)
@@ -70,49 +154,356 @@ class CameraViewController: UIViewController {
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         backButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(backButton)
-        
+
         // 拍照按钮
-        captureButton.backgroundColor = UIColor(red: 0.96, green: 0.26, blue: 0.21, alpha: 1.0) // #F44336
+        captureButton.backgroundColor = UIColor(red: 0.96, green: 0.26, blue: 0.21, alpha: 1.0)  // #F44336
         captureButton.layer.cornerRadius = 50
         captureButton.addTarget(self, action: #selector(captureTapped), for: .touchUpInside)
         captureButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(captureButton)
-        
+        updateCaptureButtonState(enabled: false)
+
         NSLayoutConstraint.activate([
-            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            backButton.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            
+
             captureButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            captureButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -48),
+            captureButton.bottomAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -48),
             captureButton.widthAnchor.constraint(equalToConstant: 100),
-            captureButton.heightAnchor.constraint(equalToConstant: 100)
+            captureButton.heightAnchor.constraint(equalToConstant: 100),
         ])
+
+        setupDetectionHint()
     }
-    
+
     @objc private func backTapped() {
         navigationController?.popViewController(animated: true)
     }
-    
+
     @objc private func captureTapped() {
         let settings = AVCapturePhotoSettings()
         photoOutput?.capturePhoto(with: settings, delegate: self)
+    }
+
+    private func updateCaptureButtonState(enabled: Bool) {
+        captureButton.isEnabled = enabled
+        if enabled {
+            captureButton.alpha = 1.0
+            captureButton.transform = .identity
+        } else {
+            captureButton.alpha = 0.5
+            captureButton.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+        }
     }
 }
 
 // MARK: - AVCapturePhotoCaptureDelegate
 extension CameraViewController: AVCapturePhotoCaptureDelegate {
-    func photoOutput(_ output: AVCapturePhotoOutput, 
-                    didFinishProcessingPhoto photo: AVCapturePhoto, 
-                    error: Error?) {
+    func photoOutput(
+        _ output: AVCapturePhotoOutput,
+        didFinishProcessingPhoto photo: AVCapturePhoto,
+        error: Error?
+    ) {
         guard let imageData = photo.fileDataRepresentation(),
-              let image = UIImage(data: imageData) else {
+            let image = UIImage(data: imageData)
+        else {
             return
         }
-        
-        // 处理图片
-        ImageProcessor.processImage(image) { [weak self] processedImage in
-            let resultVC = ResultViewController(image: processedImage)
-            self?.navigationController?.pushViewController(resultVC, animated: true)
+
+        // 进入结果页：原图 + 初始四边形，支持用户调整
+        let resultVC = ResultViewController(
+            originalImage: image,
+            initialQuad: lastNormalizedQuad?.asProcessorQuad()
+        )
+        self.navigationController?.pushViewController(resultVC, animated: true)
+    }
+}
+
+// MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
+extension CameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
+    func captureOutput(
+        _ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer,
+        from connection: AVCaptureConnection
+    ) {
+        guard !isProcessingFrame,
+            let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
+        else { return }
+        isProcessingFrame = true
+        let orientation = CGImagePropertyOrientation(
+            deviceOrientation: UIDevice.current.orientation)
+        let observation = detectRectangle(in: pixelBuffer, orientation: orientation)
+        DispatchQueue.main.async { [weak self] in
+            self?.updateOverlay(with: observation)
         }
+        isProcessingFrame = false
+    }
+}
+
+// MARK: - Overlay helpers
+extension CameraViewController {
+    fileprivate func updateOverlay(with observation: VNRectangleObservation?) {
+        guard let previewLayer = previewLayer else { return }
+        guard let obs = observation else {
+            detectionOverlay.path = nil
+            showDetectionHint()
+            hasDetectedRectangle = false
+            updateCaptureButtonState(enabled: false)
+            lastNormalizedQuad = nil
+            return
+        }
+        let smoothed = smoothQuad(with: obs)
+        let path = UIBezierPath()
+        let tl = previewLayer.layerPointConverted(fromCaptureDevicePoint: smoothed.topLeft)
+        let tr = previewLayer.layerPointConverted(fromCaptureDevicePoint: smoothed.topRight)
+        let br = previewLayer.layerPointConverted(fromCaptureDevicePoint: smoothed.bottomRight)
+        let bl = previewLayer.layerPointConverted(fromCaptureDevicePoint: smoothed.bottomLeft)
+        path.move(to: tl)
+        path.addLine(to: tr)
+        path.addLine(to: br)
+        path.addLine(to: bl)
+        path.close()
+        detectionOverlay.path = path.cgPath
+        hideDetectionHint()
+        if !hasDetectedRectangle {
+            hasDetectedRectangle = true
+            updateCaptureButtonState(enabled: true)
+        }
+    }
+
+    private func smoothQuad(with obs: VNRectangleObservation) -> NormalizedQuad {
+        let newQuad = NormalizedQuad(
+            topLeft: obs.topLeft,
+            topRight: obs.topRight,
+            bottomRight: obs.bottomRight,
+            bottomLeft: obs.bottomLeft
+        )
+
+        guard let last = lastNormalizedQuad else {
+            lastNormalizedQuad = newQuad
+            return newQuad
+        }
+
+        // 若跳变过大（中心移动超过 0.3 的归一化距离），直接重置，避免锁定错误目标
+        let lastCenter = last.center
+        let newCenter = newQuad.center
+        let dx = newCenter.x - lastCenter.x
+        let dy = newCenter.y - lastCenter.y
+        if sqrt(dx * dx + dy * dy) > 0.3 {
+            lastNormalizedQuad = newQuad
+            return newQuad
+        }
+
+        let alpha: CGFloat = 0.3  // 越小越平滑
+        let blended = NormalizedQuad(
+            topLeft: last.topLeft.lerp(to: newQuad.topLeft, alpha: alpha),
+            topRight: last.topRight.lerp(to: newQuad.topRight, alpha: alpha),
+            bottomRight: last.bottomRight.lerp(to: newQuad.bottomRight, alpha: alpha),
+            bottomLeft: last.bottomLeft.lerp(to: newQuad.bottomLeft, alpha: alpha)
+        )
+        lastNormalizedQuad = blended
+        return blended
+    }
+
+    fileprivate struct NormalizedQuad {
+        let topLeft: CGPoint
+        let topRight: CGPoint
+        let bottomRight: CGPoint
+        let bottomLeft: CGPoint
+
+        var center: CGPoint {
+            CGPoint(
+                x: (topLeft.x + topRight.x + bottomRight.x + bottomLeft.x) * 0.25,
+                y: (topLeft.y + topRight.y + bottomRight.y + bottomLeft.y) * 0.25
+            )
+        }
+    }
+
+    private func setupDetectionHint() {
+        detectionHintLabel.text = NSLocalizedString("hint_no_edges", comment: "")
+        detectionHintLabel.font = UIFont.systemFont(ofSize: 15, weight: .medium)
+        detectionHintLabel.textColor = .white
+        detectionHintLabel.backgroundColor = UIColor(white: 0, alpha: 0.65)
+        detectionHintLabel.textAlignment = .center
+        detectionHintLabel.layer.cornerRadius = 12
+        detectionHintLabel.layer.masksToBounds = true
+        detectionHintLabel.alpha = 0
+        detectionHintLabel.numberOfLines = 0
+        detectionHintLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(detectionHintLabel)
+
+        NSLayoutConstraint.activate([
+            detectionHintLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            detectionHintLabel.bottomAnchor.constraint(
+                equalTo: captureButton.topAnchor, constant: -24),
+            detectionHintLabel.leadingAnchor.constraint(
+                greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
+            detectionHintLabel.trailingAnchor.constraint(
+                lessThanOrEqualTo: view.trailingAnchor, constant: -24),
+        ])
+    }
+
+    private func showDetectionHint() {
+        detectionHintWorkItem?.cancel()
+        UIView.animate(withDuration: 0.18) { [weak self] in
+            self?.detectionHintLabel.alpha = 1
+        }
+
+        let work = DispatchWorkItem { [weak self] in
+            UIView.animate(withDuration: 0.18) {
+                self?.detectionHintLabel.alpha = 0
+            }
+        }
+        detectionHintWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2, execute: work)
+    }
+
+    private func hideDetectionHint() {
+        detectionHintWorkItem?.cancel()
+        UIView.animate(withDuration: 0.18) { [weak self] in
+            self?.detectionHintLabel.alpha = 0
+        }
+    }
+}
+
+// MARK: - Orientation mapping
+extension CGImagePropertyOrientation {
+    fileprivate init(deviceOrientation: UIDeviceOrientation) {
+        switch deviceOrientation {
+        case .portraitUpsideDown: self = .left
+        case .landscapeLeft: self = .up
+        case .landscapeRight: self = .down
+        default: self = .right
+        }
+    }
+}
+
+// MARK: - Vision detection helpers
+extension CameraViewController {
+    private struct RectangleConfig {
+        let minAspect: Float
+        let maxAspect: Float
+        let minSize: Float
+        let minConfidence: Float
+        let quadratureTolerance: Float
+    }
+
+    fileprivate func detectRectangle(
+        in pixelBuffer: CVPixelBuffer,
+        orientation: CGImagePropertyOrientation
+    ) -> VNRectangleObservation? {
+        // 增加大幅面优先配置，确保 A4 这类大面积文档优先被命中
+        let largePrimary = RectangleConfig(
+            minAspect: 0.65, maxAspect: 1.8,
+            minSize: 0.35, minConfidence: 0.45,
+            quadratureTolerance: 22
+        )
+
+        let primary = RectangleConfig(
+            minAspect: 0.35, maxAspect: 3.0,
+            minSize: 0.15, minConfidence: 0.50,
+            quadratureTolerance: 20
+        )
+        let fallback = RectangleConfig(
+            minAspect: 0.10, maxAspect: 6.0,
+            minSize: 0.07, minConfidence: 0.38,
+            quadratureTolerance: 30
+        )
+        let wideFallback = RectangleConfig(
+            minAspect: 0.06, maxAspect: 8.0,
+            minSize: 0.04, minConfidence: 0.30,
+            quadratureTolerance: 38
+        )
+
+        for config in [largePrimary, primary, fallback, wideFallback] {
+            if let obs = performRectangleDetection(
+                pixelBuffer: pixelBuffer,
+                orientation: orientation,
+                config: config
+            ) {
+                return obs
+            }
+        }
+        return nil
+    }
+
+    private func performRectangleDetection(
+        pixelBuffer: CVPixelBuffer,
+        orientation: CGImagePropertyOrientation,
+        config: RectangleConfig
+    ) -> VNRectangleObservation? {
+        let request = VNDetectRectanglesRequest()
+        request.minimumAspectRatio = config.minAspect
+        request.maximumAspectRatio = config.maxAspect
+        request.minimumSize = config.minSize
+        request.minimumConfidence = config.minConfidence
+        request.maximumObservations = 8
+        request.quadratureTolerance = config.quadratureTolerance
+
+        let handler = VNImageRequestHandler(
+            cvPixelBuffer: pixelBuffer,
+            orientation: orientation,
+            options: [:]
+        )
+        try? handler.perform([request])
+
+        guard let results = request.results as? [VNRectangleObservation], !results.isEmpty else {
+            return nil
+        }
+
+        // 选出面积大且置信度高的矩形，减少乱跳
+        let best =
+            results
+            .filter { $0.confidence >= config.minConfidence }
+            .max { lhs, rhs in
+                score(for: lhs) < score(for: rhs)
+            }
+
+        return best ?? results.first
+    }
+
+    private func score(for obs: VNRectangleObservation) -> Float {
+        let area = obs.boundingBox.width * obs.boundingBox.height  // CGFloat
+        let confidence = obs.confidence
+
+        // 中心权重：越靠屏幕中心得分越高，最大约 1.0，边缘衰减
+        let center = CGPoint(x: 0.5, y: 0.5)
+        let dx = obs.boundingBox.midX - center.x
+        let dy = obs.boundingBox.midY - center.y
+        let centerDist = CGFloat(hypot(dx, dy))
+        let centerWeight = max(CGFloat(0.4), 1.0 - centerDist * 1.2)
+
+        // 纵横比惩罚：过于极端的细长形降权
+        let aspect = max(
+            obs.boundingBox.width / obs.boundingBox.height,
+            obs.boundingBox.height / obs.boundingBox.width
+        )
+        let aspectPenalty: CGFloat = aspect > 4.5 ? 0.6 : (aspect > 3.5 ? 0.8 : 1.0)
+
+        // 面积权重：更大文档优先（对大幅 A4 有利）
+        let areaBoost = min(Float(area) * 1.4 + 0.6, 3.0)
+
+        return confidence * Float(area * centerWeight * aspectPenalty) * areaBoost
+    }
+}
+
+extension CGPoint {
+    fileprivate func lerp(to: CGPoint, alpha: CGFloat) -> CGPoint {
+        CGPoint(
+            x: self.x * (1 - alpha) + to.x * alpha,
+            y: self.y * (1 - alpha) + to.y * alpha
+        )
+    }
+}
+
+extension CameraViewController.NormalizedQuad {
+    fileprivate func asProcessorQuad() -> ImageProcessor.NormalizedQuad {
+        ImageProcessor.NormalizedQuad(
+            topLeft: topLeft,
+            topRight: topRight,
+            bottomRight: bottomRight,
+            bottomLeft: bottomLeft
+        )
     }
 }

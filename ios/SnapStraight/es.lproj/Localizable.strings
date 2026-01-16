@@ -10,3 +10,4 @@
 "save_failed" = "Error al guardar";
 "permission_camera" = "Se requiere permiso de cámara para tomar fotos";
 "permission_storage" = "Se requiere permiso de biblioteca de fotos para guardar imágenes";
+"hint_no_edges" = "No se detectaron bordes. Acércate y mantén la cámara paralela.";

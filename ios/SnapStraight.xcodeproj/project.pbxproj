@@ -1,11 +1,262 @@
 // !$*UTF8*$!
 {
-    archiveVersion = 1;
-    classes = {
-    };
-    objectVersion = 56;
-    objects = {
-        rootObject = "SnapStraight Project";
-    };
-    rootObject = "SnapStraight";
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1AB2C3D40E5F6A7B8C9D100 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D040 /* AppDelegate.swift */; };
+		1AB2C3D40E5F6A7B8C9D101 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D041 /* MainViewController.swift */; };
+		1AB2C3D40E5F6A7B8C9D102 /* CameraViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D042 /* CameraViewController.swift */; };
+		1AB2C3D40E5F6A7B8C9D103 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D043 /* ImageProcessor.swift */; };
+		1AB2C3D40E5F6A7B8C9D104 /* ResultViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D044 /* ResultViewController.swift */; };
+		1AB2C3D40E5F6A7B8C9D112 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D111 /* SceneDelegate.swift */; };
+		1AB2C3D40E5F6A7B8C9D105 /* Localizable.strings (English) in Resources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D046 /* Localizable.strings (English) */; };
+		1AB2C3D40E5F6A7B8C9D106 /* Localizable.strings (Spanish) in Resources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D047 /* Localizable.strings (Spanish) */; };
+		1AB2C3D40E5F6A7B8C9D107 /* Localizable.strings (Japanese) in Resources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D048 /* Localizable.strings (Japanese) */; };
+		1AB2C3D40E5F6A7B8C9D108 /* Localizable.strings (Korean) in Resources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D049 /* Localizable.strings (Korean) */; };
+		1AB2C3D40E5F6A7B8C9D109 /* Localizable.strings (Simplified Chinese) in Resources */ = {isa = PBXBuildFile; fileRef = 1AB2C3D40E5F6A7B8C9D050 /* Localizable.strings (Simplified Chinese) */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1AB2C3D40E5F6A7B8C9D040 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D041 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D042 /* CameraViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewController.swift; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D043 /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D044 /* ResultViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultViewController.swift; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D045 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D046 /* Localizable.strings (English) */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "Localizable.strings (English)"; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D047 /* Localizable.strings (Spanish) */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "Localizable.strings (Spanish)"; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D048 /* Localizable.strings (Japanese) */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "Localizable.strings (Japanese)"; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D111 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D049 /* Localizable.strings (Korean) */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "Localizable.strings (Korean)"; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D050 /* Localizable.strings (Simplified Chinese) */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "Localizable.strings (Simplified Chinese)"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		1AB2C3D40E5F6A7B8C9D060 /* SnapStraight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapStraight.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1AB2C3D40E5F6A7B8C9D013 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1AB2C3D40E5F6A7B8C9D002 = {
+			isa = PBXGroup;
+			children = (
+				1AB2C3D40E5F6A7B8C9D070 /* SnapStraight */,
+				1AB2C3D40E5F6A7B8C9D003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1AB2C3D40E5F6A7B8C9D003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1AB2C3D40E5F6A7B8C9D060 /* SnapStraight.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1AB2C3D40E5F6A7B8C9D070 /* SnapStraight */ = {
+			isa = PBXGroup;
+			children = (
+				1AB2C3D40E5F6A7B8C9D040 /* AppDelegate.swift */,
+				1AB2C3D40E5F6A7B8C9D111 /* SceneDelegate.swift */,
+				1AB2C3D40E5F6A7B8C9D041 /* MainViewController.swift */,
+				1AB2C3D40E5F6A7B8C9D042 /* CameraViewController.swift */,
+				1AB2C3D40E5F6A7B8C9D043 /* ImageProcessor.swift */,
+				1AB2C3D40E5F6A7B8C9D044 /* ResultViewController.swift */,
+				1AB2C3D40E5F6A7B8C9D045 /* Info.plist */,
+				1AB2C3D40E5F6A7B8C9D046 /* Localizable.strings (English) */,
+				1AB2C3D40E5F6A7B8C9D047 /* Localizable.strings (Spanish) */,
+				1AB2C3D40E5F6A7B8C9D048 /* Localizable.strings (Japanese) */,
+				1AB2C3D40E5F6A7B8C9D049 /* Localizable.strings (Korean) */,
+				1AB2C3D40E5F6A7B8C9D050 /* Localizable.strings (Simplified Chinese) */,
+			);
+			path = SnapStraight;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1AB2C3D40E5F6A7B8C9D010 /* SnapStraight */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1AB2C3D40E5F6A7B8C9D020 /* Build configuration list for PBXNativeTarget "SnapStraight" */;
+			buildPhases = (
+				1AB2C3D40E5F6A7B8C9D011 /* Sources */,
+				1AB2C3D40E5F6A7B8C9D013 /* Frameworks */,
+				1AB2C3D40E5F6A7B8C9D012 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SnapStraight;
+			productName = SnapStraight;
+			productReference = 1AB2C3D40E5F6A7B8C9D060 /* SnapStraight.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1AB2C3D40E5F6A7B8C9D001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1500;
+				ORGANIZATIONNAME = SnapStraight;
+				TargetAttributes = {
+					1AB2C3D40E5F6A7B8C9D010 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 1AB2C3D40E5F6A7B8C9D030 /* Build configuration list for PBXProject "SnapStraight" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				es,
+				ja,
+				ko,
+				"zh-Hans",
+			);
+			mainGroup = 1AB2C3D40E5F6A7B8C9D002;
+			productRefGroup = 1AB2C3D40E5F6A7B8C9D003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1AB2C3D40E5F6A7B8C9D010 /* SnapStraight */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1AB2C3D40E5F6A7B8C9D012 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1AB2C3D40E5F6A7B8C9D105 /* Localizable.strings (English) in Resources */,
+				1AB2C3D40E5F6A7B8C9D106 /* Localizable.strings (Spanish) in Resources */,
+				1AB2C3D40E5F6A7B8C9D107 /* Localizable.strings (Japanese) in Resources */,
+				1AB2C3D40E5F6A7B8C9D108 /* Localizable.strings (Korean) in Resources */,
+				1AB2C3D40E5F6A7B8C9D109 /* Localizable.strings (Simplified Chinese) in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1AB2C3D40E5F6A7B8C9D011 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1AB2C3D40E5F6A7B8C9D100 /* AppDelegate.swift in Sources */,
+				1AB2C3D40E5F6A7B8C9D112 /* SceneDelegate.swift in Sources */,
+				1AB2C3D40E5F6A7B8C9D101 /* MainViewController.swift in Sources */,
+				1AB2C3D40E5F6A7B8C9D102 /* CameraViewController.swift in Sources */,
+				1AB2C3D40E5F6A7B8C9D103 /* ImageProcessor.swift in Sources */,
+				1AB2C3D40E5F6A7B8C9D104 /* ResultViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1AB2C3D40E5F6A7B8C9D021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEVELOPMENT_TEAM = YV34LN242Z;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		1AB2C3D40E5F6A7B8C9D022 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEVELOPMENT_TEAM = YV34LN242Z;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		1AB2C3D40E5F6A7B8C9D031 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_BITCODE = NO;
+				INFOPLIST_FILE = SnapStraight/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.snapstraight.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		1AB2C3D40E5F6A7B8C9D032 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_BITCODE = NO;
+				INFOPLIST_FILE = SnapStraight/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.snapstraight.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1AB2C3D40E5F6A7B8C9D020 /* Build configuration list for PBXNativeTarget "SnapStraight" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1AB2C3D40E5F6A7B8C9D021 /* Debug */,
+				1AB2C3D40E5F6A7B8C9D022 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1AB2C3D40E5F6A7B8C9D030 /* Build configuration list for PBXProject "SnapStraight" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1AB2C3D40E5F6A7B8C9D031 /* Debug */,
+				1AB2C3D40E5F6A7B8C9D032 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1AB2C3D40E5F6A7B8C9D001 /* Project object */;
 }
