@@ -11,10 +11,9 @@ class ResultViewController: UIViewController {
     private let imageView = UIImageView()
     private let overlayView = QuadOverlayView()
     private let backButton = UIButton(type: .system)
-    private let applyButton = UIButton(type: .system)
     private let saveButton = UIButton(type: .system)
 
-    private var flattenedImage: UIImage?
+    private var hasConfigured = false
 
     init(originalImage: UIImage, initialQuad: ImageProcessor.NormalizedQuad?) {
         self.originalImage = originalImage
@@ -29,6 +28,15 @@ class ResultViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // Ensure frames are finalized before configuring the overlay
+        if !hasConfigured && imageView.bounds.width > 0 {
+            overlayView.configure(for: imageView, image: originalImage, initialQuad: initialQuad)
+            hasConfigured = true
+        }
     }
 
     private func setupUI() {
@@ -48,22 +56,14 @@ class ResultViewController: UIViewController {
         // 图片预览
         imageView.image = originalImage
         imageView.contentMode = .scaleAspectFit
+        imageView.isUserInteractionEnabled = true // Required for subview interactions
         imageView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(imageView)
 
-        // 覆盖层（四边形可拖拽）
+        // 覆盖层（四边形可拖拽） - 改为 imageView 的子视图，确保坐标系绝对对齐
         overlayView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(overlayView)
+        imageView.addSubview(overlayView)
 
-        // 操作按钮
-        applyButton.setTitle(NSLocalizedString("btn_apply_flatten", comment: "拉平预览"), for: .normal)
-        applyButton.titleLabel?.font = UIFont.systemFont(ofSize: 20, weight: .medium)
-        applyButton.setTitleColor(.white, for: .normal)
-        applyButton.backgroundColor = UIColor.systemBlue
-        applyButton.layer.cornerRadius = 12
-        applyButton.addTarget(self, action: #selector(applyFlatten), for: .touchUpInside)
-        applyButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(applyButton)
 
         saveButton.setTitle(NSLocalizedString("btn_save", comment: "保存"), for: .normal)
         saveButton.titleLabel?.font = UIFont.systemFont(ofSize: 22, weight: .medium)
@@ -83,55 +83,47 @@ class ResultViewController: UIViewController {
                 equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            imageView.bottomAnchor.constraint(equalTo: applyButton.topAnchor, constant: -16),
+            imageView.bottomAnchor.constraint(equalTo: saveButton.topAnchor, constant: -16),
 
             overlayView.topAnchor.constraint(equalTo: imageView.topAnchor),
             overlayView.leadingAnchor.constraint(equalTo: imageView.leadingAnchor),
             overlayView.trailingAnchor.constraint(equalTo: imageView.trailingAnchor),
             overlayView.bottomAnchor.constraint(equalTo: imageView.bottomAnchor),
 
-            applyButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            applyButton.bottomAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24),
-            applyButton.heightAnchor.constraint(equalToConstant: 54),
-
-            saveButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            saveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            saveButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 48),
+            saveButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -48),
             saveButton.bottomAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24),
             saveButton.heightAnchor.constraint(equalToConstant: 54),
-            saveButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 120),
         ])
-
-        // 设置初始四边形
-        view.layoutIfNeeded()
-        overlayView.configure(for: imageView, image: originalImage, initialQuad: initialQuad)
     }
 
     @objc private func backTapped() {
         navigationController?.popViewController(animated: true)
     }
 
-    @objc private func applyFlatten() {
-        guard let quad = overlayView.currentNormalizedQuad(in: imageView, image: originalImage)
-        else { return }
-        ImageProcessor.processImageWithQuad(originalImage, quad: quad) { [weak self] output in
-            self?.flattenedImage = output
-            self?.imageView.image = output
-            // 应用后隐藏覆盖层，避免误拖；可再次点击返回编辑
-            self?.overlayView.isHidden = true
-        }
-    }
 
     @objc private func saveTapped() {
-        let toSave = flattenedImage ?? imageView.image ?? originalImage
-        PHPhotoLibrary.shared().performChanges({
-            PHAssetChangeRequest.creationRequestForAsset(from: toSave)
-        }) { [weak self] success, error in
-            DispatchQueue.main.async {
-                if success {
-                    self?.showSaveSuccess()
-                } else {
-                    self?.showSaveError()
+        guard let quad = overlayView.currentNormalizedQuad(in: imageView, image: originalImage)
+        else { return }
+        
+        // Show processing alert
+        let alert = UIAlertController(title: nil, message: NSLocalizedString("processing", comment: ""), preferredStyle: .alert)
+        present(alert, animated: true)
+
+        ImageProcessor.processImageWithQuad(originalImage, quad: quad) { [weak self] processedImage in
+            PHPhotoLibrary.shared().performChanges({
+                PHAssetChangeRequest.creationRequestForAsset(from: processedImage)
+            }) { [weak self] success, error in
+                DispatchQueue.main.async {
+                    alert.dismiss(animated: true) {
+                        if success {
+                            self?.showSaveSuccess()
+                        } else {
+                            self?.showSaveError()
+                        }
+                    }
                 }
             }
         }
@@ -274,8 +266,8 @@ extension UIImageView {
         let scale = min(viewSize.width / imgSize.width, viewSize.height / imgSize.height)
         let width = imgSize.width * scale
         let height = imgSize.height * scale
-        let x = (viewSize.width - width) * 0.5 + frame.origin.x
-        let y = (viewSize.height - height) * 0.5 + frame.origin.y
+        let x = (viewSize.width - width) * 0.5
+        let y = (viewSize.height - height) * 0.5
         return CGRect(x: x, y: y, width: width, height: height)
     }
 }

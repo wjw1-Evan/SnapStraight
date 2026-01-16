@@ -11,3 +11,4 @@
 "permission_camera" = "写真を撮るにはカメラの許可が必要です";
 "permission_storage" = "画像を保存するにはフォトライブラリの許可が必要です";
 "hint_no_edges" = "エッジを検出できません。カメラを近づけて平行に保ってください。";
+"btn_apply_flatten" = "プレビューを平坦化";

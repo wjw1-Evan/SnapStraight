@@ -11,3 +11,4 @@
 "permission_camera" = "Camera permission is required to take photos";
 "permission_storage" = "Photo library permission is required to save images";
 "hint_no_edges" = "No edges detected. Move closer and keep the camera parallel.";
+"btn_apply_flatten" = "Apply Flatten";

@@ -36,12 +36,14 @@ class ImageProcessor {
         completion: @escaping (UIImage) -> Void
     ) {
         DispatchQueue.global(qos: .userInitiated).async {
-            guard let cgImage = image.cgImage else {
+            // Flatten orientation to eliminate coordinate ambiguity
+            let fixed = fixOrientation(image)
+            guard let cgImage = fixed.cgImage else {
                 DispatchQueue.main.async { completion(image) }
                 return
             }
-            let orientation = CGImagePropertyOrientation(image.imageOrientation)
-            let ciImage = CIImage(cgImage: cgImage).oriented(orientation)
+            
+            let ciImage = CIImage(cgImage: cgImage)
             if let corrected = perspectiveCorrect(ciImage, quad: quad) {
                 let enhanced = autoEnhance(corrected)
                 if let outputImage = convertToUIImage(enhanced) {
@@ -56,12 +58,10 @@ class ImageProcessor {
     private static func processImageInternal(_ image: UIImage, preferredQuad: NormalizedQuad?)
         -> UIImage
     {
-        // 保留原始方向信息，避免 Vision 识别失败
-        guard let cgImage = image.cgImage else { return image }
-        let orientation = CGImagePropertyOrientation(image.imageOrientation)
-
-        // 将 CIImage 按照原始方向矫正，保证坐标系与 Vision 一致
-        let ciImage = CIImage(cgImage: cgImage).oriented(orientation)
+        // Flatten orientation
+        let fixed = fixOrientation(image)
+        guard let cgImage = fixed.cgImage else { return image }
+        let ciImage = CIImage(cgImage: cgImage)
 
         // 1. 边缘检测（考虑方向） - ciImage已矫正为Up，故传Up
         if let corners = detectRectangle(in: ciImage, orientation: .up) {
@@ -199,58 +199,40 @@ class ImageProcessor {
     }
 
     private static func perspectiveCorrect(_ image: CIImage, quad: NormalizedQuad) -> CIImage? {
-        let imageSize = image.extent.size
+        let extent = image.extent
+        let size = extent.size
+        
+        // Coordinates are normalized 0..1 with (0,0) at bottom-left
+        // Ensure we add extent.origin as CIImage coordinate space may not start at 0,0
+        let pTL = CGPoint(x: extent.origin.x + quad.topLeft.x * size.width, y: extent.origin.y + quad.topLeft.y * size.height)
+        let pTR = CGPoint(x: extent.origin.x + quad.topRight.x * size.width, y: extent.origin.y + quad.topRight.y * size.height)
+        let pBR = CGPoint(x: extent.origin.x + quad.bottomRight.x * size.width, y: extent.origin.y + quad.bottomRight.y * size.height)
+        let pBL = CGPoint(x: extent.origin.x + quad.bottomLeft.x * size.width, y: extent.origin.y + quad.bottomLeft.y * size.height)
 
-        // 转换坐标系（Vision使用标准化坐标，原点在左下角）
-        let topLeft = CGPoint(
-            x: quad.topLeft.x * imageSize.width,
-            y: quad.topLeft.y * imageSize.height
-        )
-        let topRight = CGPoint(
-            x: quad.topRight.x * imageSize.width,
-            y: quad.topRight.y * imageSize.height
-        )
-        let bottomRight = CGPoint(
-            x: quad.bottomRight.x * imageSize.width,
-            y: quad.bottomRight.y * imageSize.height
-        )
-        let bottomLeft = CGPoint(
-            x: quad.bottomLeft.x * imageSize.width,
-            y: quad.bottomLeft.y * imageSize.height
-        )
+        let filter = CIFilter(name: "CIPerspectiveCorrection")
+        filter?.setValue(image, forKey: kCIInputImageKey)
+        filter?.setValue(CIVector(cgPoint: pTL), forKey: "inputTopLeft")
+        filter?.setValue(CIVector(cgPoint: pTR), forKey: "inputTopRight")
+        filter?.setValue(CIVector(cgPoint: pBR), forKey: "inputBottomRight")
+        filter?.setValue(CIVector(cgPoint: pBL), forKey: "inputBottomLeft")
 
-        // 计算输出图片尺寸
-        let width = max(
-            distance(topLeft, topRight),
-            distance(bottomLeft, bottomRight)
-        )
-        let height = max(
-            distance(topLeft, bottomLeft),
-            distance(topRight, bottomRight)
-        )
+        guard let output = filter?.outputImage else { return nil }
+        
+        // CIPerspectiveCorrection output content sits at its own extent.
+        // We translate it to 0,0 and crop to its size to ensure a clean result.
+        let outExtent = output.extent
+        let translated = output.transformed(by: CGAffineTransform(translationX: -outExtent.origin.x, y: -outExtent.origin.y))
+        return translated.cropped(to: CGRect(origin: .zero, size: outExtent.size))
+    }
 
-        // 透视变换
-        let perspectiveCorrection = CIFilter(name: "CIPerspectiveCorrection")
-        perspectiveCorrection?.setValue(CIVector(cgPoint: topLeft), forKey: "inputTopLeft")
-        perspectiveCorrection?.setValue(CIVector(cgPoint: topRight), forKey: "inputTopRight")
-        perspectiveCorrection?.setValue(CIVector(cgPoint: bottomRight), forKey: "inputBottomRight")
-        perspectiveCorrection?.setValue(CIVector(cgPoint: bottomLeft), forKey: "inputBottomLeft")
-        perspectiveCorrection?.setValue(image, forKey: kCIInputImageKey)
-
-        guard let output = perspectiveCorrection?.outputImage else { return nil }
-
-        // 矫正后的图像可能带有偏移/黑边，这里将原点平移到 0,0 并裁剪到文档宽高
-        let translated = output.transformed(
-            by: CGAffineTransform(
-                translationX: -output.extent.origin.x,
-                y: -output.extent.origin.y
-            ))
-
-        let targetWidth = max(width, 1)
-        let targetHeight = max(height, 1)
-        let cropRect = CGRect(origin: .zero, size: CGSize(width: targetWidth, height: targetHeight))
-
-        return translated.cropped(to: cropRect)
+    /// Flatten UIImage orientation by re-drawing it
+    private static func fixOrientation(_ image: UIImage) -> UIImage {
+        if image.imageOrientation == .up { return image }
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let fixed = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return fixed ?? image
     }
 
     /**

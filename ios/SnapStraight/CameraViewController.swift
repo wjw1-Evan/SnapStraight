@@ -21,7 +21,7 @@ class CameraViewController: UIViewController {
     
     // Auto-Capture Properties
     private var stabilityCounter = 0
-    private let stabilityThreshold = 15 // frames, approx 0.5s at 30fps
+    private let stabilityThreshold = 25 // Increase to approx 0.8s for better precision
     private var isAutoCapturing = false
     private let progressLayer = CAShapeLayer()
 
@@ -154,7 +154,8 @@ class CameraViewController: UIViewController {
         detectionOverlay.lineWidth = 3
         detectionOverlay.lineJoin = .round
         detectionOverlay.frame = view.bounds
-        view.layer.addSublayer(detectionOverlay)
+        // 已根据用户反馈移除黄色框显示，仅保留后台检测逻辑与进度条
+        // view.layer.addSublayer(detectionOverlay)
         
         setupProgressLayer()
     }
@@ -300,7 +301,7 @@ extension CameraViewController {
         path.addLine(to: br)
         path.addLine(to: bl)
         path.close()
-        detectionOverlay.path = path.cgPath
+        // detectionOverlay.path = path.cgPath
         hideDetectionHint()
         if !hasDetectedRectangle {
             hasDetectedRectangle = true
@@ -461,30 +462,24 @@ extension CameraViewController {
         in pixelBuffer: CVPixelBuffer,
         orientation: CGImagePropertyOrientation
     ) -> VNRectangleObservation? {
-        // 增加大幅面优先配置，确保 A4 这类大面积文档优先被命中
+        // 进一步放宽限制，允许更大幅度的透视变形和更小的目标
         let largePrimary = RectangleConfig(
-            minAspect: 0.65, maxAspect: 1.8,
-            minSize: 0.35, minConfidence: 0.45,
-            quadratureTolerance: 22
+            minAspect: 0.5, maxAspect: 2.0,
+            minSize: 0.25, minConfidence: 0.45,
+            quadratureTolerance: 45
         )
-
         let primary = RectangleConfig(
-            minAspect: 0.35, maxAspect: 3.0,
-            minSize: 0.15, minConfidence: 0.50,
-            quadratureTolerance: 20
+            minAspect: 0.2, maxAspect: 4.0,
+            minSize: 0.1, minConfidence: 0.4,
+            quadratureTolerance: 45
         )
         let fallback = RectangleConfig(
-            minAspect: 0.10, maxAspect: 6.0,
-            minSize: 0.07, minConfidence: 0.38,
-            quadratureTolerance: 30
-        )
-        let wideFallback = RectangleConfig(
-            minAspect: 0.06, maxAspect: 8.0,
-            minSize: 0.04, minConfidence: 0.30,
-            quadratureTolerance: 38
+            minAspect: 0.05, maxAspect: 10.0,
+            minSize: 0.05, minConfidence: 0.3,
+            quadratureTolerance: 45
         )
 
-        for config in [largePrimary, primary, fallback, wideFallback] {
+        for config in [largePrimary, primary, fallback] {
             if let obs = performRectangleDetection(
                 pixelBuffer: pixelBuffer,
                 orientation: orientation,
@@ -506,7 +501,7 @@ extension CameraViewController {
         request.maximumAspectRatio = config.maxAspect
         request.minimumSize = config.minSize
         request.minimumConfidence = config.minConfidence
-        request.maximumObservations = 8
+        request.maximumObservations = 16 // Increase to check more candidates
         request.quadratureTolerance = config.quadratureTolerance
 
         let handler = VNImageRequestHandler(
@@ -549,10 +544,14 @@ extension CameraViewController {
         )
         let aspectPenalty: CGFloat = aspect > 4.5 ? 0.6 : (aspect > 3.5 ? 0.8 : 1.0)
 
-        // 面积权重：更大文档优先（对大幅 A4 有利）
-        let areaBoost = min(Float(area) * 1.4 + 0.6, 3.0)
+        // 面积权重：大幅提升面积权重，避免背景中的小矩形干扰
+        let areaBoost = pow(Float(area), 0.7) * 2.0
+        
+        // 形状权重：越接近矩形（通过 Vision 内部评分或长宽比合理性）
+        // 这里简单用长宽比分段
+        let aspectWeight: Float = (aspect > 1.0 && aspect < 1.6) ? 1.2 : 1.0 // 接近 A4 比例加权
 
-        return confidence * Float(area * centerWeight * aspectPenalty) * areaBoost
+        return confidence * Float(centerWeight * aspectPenalty) * areaBoost * aspectWeight
     }
 }
 
