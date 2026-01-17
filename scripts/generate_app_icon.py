@@ -88,6 +88,9 @@ def main():
     ios_dir = 'ios/SnapStraight/Assets.xcassets/AppIcon.appiconset'
     ensure_dir(ios_dir)
     base_ios = generate_icon(1024, include_background=True)
+    # 为了符合 App Store 要求：iOS 大图标不可包含透明或 Alpha 通道
+    # 这里将图标统一转换为 RGB，无 Alpha 通道
+    base_ios = base_ios.convert('RGB')
     base_ios.save(f"{ios_dir}/AppIcon-1024.png", 'PNG')
     print('Saved:', f"{ios_dir}/AppIcon-1024.png")
 
@@ -113,7 +116,7 @@ def main():
     }
 
     for name, sz in ios_sizes.items():
-        resized = base_ios.resize((sz, sz), Image.LANCZOS)
+        resized = base_ios.resize((sz, sz), Image.LANCZOS).convert('RGB')
         out = f"{ios_dir}/{name}"
         resized.save(out, 'PNG')
         print('Saved:', out)
