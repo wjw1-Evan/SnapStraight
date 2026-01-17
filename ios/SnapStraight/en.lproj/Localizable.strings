@@ -12,3 +12,6 @@
 "permission_storage" = "Photo library permission is required to save images";
 "hint_no_edges" = "No edges detected. Move closer and keep the camera parallel.";
 "btn_apply_flatten" = "Apply Flatten";
+"btn_usage" = "How to use";
+"usage_title" = "How to use";
+"usage_content" = "How to use:\n1. Tap \"Take Photo\" or \"Select Photo\"\n2. Aim at paper/whiteboard and hold parallel\n3. Auto-detect rectangle and auto-capture\n4. Adjust four points on the result page\n5. Tap Save to export to Photos";

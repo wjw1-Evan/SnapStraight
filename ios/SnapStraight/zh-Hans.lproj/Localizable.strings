@@ -12,3 +12,6 @@
 "permission_storage" = "需要相册权限才能保存图片";
 "hint_no_edges" = "未检测到边缘，请靠近并保持平行";
 "btn_apply_flatten" = "预览拉平";
+"btn_usage" = "使用方法";
+"usage_title" = "使用方法";
+"usage_content" = "使用方法：\n1. 点击“拍照”或“选图”\n2. 对准纸张/白板，保持平行\n3. 自动识别矩形并自动拍照\n4. 在结果页拖动四个点微调\n5. 点击保存，导出到相册";

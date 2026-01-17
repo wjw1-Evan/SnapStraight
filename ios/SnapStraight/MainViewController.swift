@@ -11,6 +11,7 @@ class MainViewController: UIViewController {
     private let appSubtitleLabel = UILabel()
     private let takePhotoButton = UIButton(type: .system)
     private let selectPhotoButton = UIButton(type: .system)
+    private let usageLabel = UILabel()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -55,6 +56,15 @@ class MainViewController: UIViewController {
         selectPhotoButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(selectPhotoButton)
 
+        // 使用方法说明（显示在两个按钮下方）
+        usageLabel.text = NSLocalizedString("usage_content", comment: "")
+        usageLabel.font = UIFont.systemFont(ofSize: 15, weight: .regular)
+        usageLabel.textColor = UIColor(white: 0.35, alpha: 1.0)
+        usageLabel.textAlignment = .center
+        usageLabel.numberOfLines = 0
+        usageLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(usageLabel)
+
         // 布局约束
         NSLayoutConstraint.activate([
             // 标题
@@ -75,6 +85,12 @@ class MainViewController: UIViewController {
             selectPhotoButton.leadingAnchor.constraint(equalTo: view.centerXAnchor, constant: 20),
             selectPhotoButton.widthAnchor.constraint(equalToConstant: 160),
             selectPhotoButton.heightAnchor.constraint(equalToConstant: 160),
+
+            // 使用方法说明
+            usageLabel.topAnchor.constraint(equalTo: selectPhotoButton.bottomAnchor, constant: 24),
+            usageLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            usageLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            usageLabel.bottomAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24),
         ])
     }
 
