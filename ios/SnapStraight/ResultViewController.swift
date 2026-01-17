@@ -118,7 +118,16 @@ class ResultViewController: UIViewController {
         ImageProcessor.processImageWithQuad(originalImage, quad: quad) {
             [weak self] processedImage in
             PHPhotoLibrary.shared().performChanges({
-                PHAssetChangeRequest.creationRequestForAsset(from: processedImage)
+                // 使用高质量 JPEG 数据保存，避免系统默认质量导致的模糊
+                if let jpegData = processedImage.jpegData(compressionQuality: 0.95) {
+                    let request = PHAssetCreationRequest.forAsset()
+                    let options = PHAssetResourceCreationOptions()
+                    options.uniformTypeIdentifier = "public.jpeg"
+                    request.addResource(with: .photo, data: jpegData, options: options)
+                } else {
+                    // 回退到默认保存方式
+                    PHAssetChangeRequest.creationRequestForAsset(from: processedImage)
+                }
             }) { [weak self] success, error in
                 DispatchQueue.main.async {
                     alert.dismiss(animated: true) {

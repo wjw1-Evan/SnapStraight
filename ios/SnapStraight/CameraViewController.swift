@@ -96,6 +96,14 @@ class CameraViewController: UIViewController {
         photoOutput = AVCapturePhotoOutput()
         if let output = photoOutput, session.canAddOutput(output) {
             session.addOutput(output)
+            // 启用高分辨率拍照与质量优先
+            output.isHighResolutionCaptureEnabled = true
+            if output.isLivePhotoCaptureSupported {
+                output.isLivePhotoCaptureEnabled = false
+            }
+            if #available(iOS 13.0, *) {
+                output.maxPhotoQualityPrioritization = .quality
+            }
         } else {
             handleCameraUnavailable(reason: NSLocalizedString("camera_unavailable", comment: ""))
             return
@@ -125,6 +133,7 @@ class CameraViewController: UIViewController {
         previewLayer = AVCaptureVideoPreviewLayer(session: session)
         previewLayer?.videoGravity = .resizeAspectFill
         previewLayer?.frame = view.bounds
+        previewLayer?.contentsScale = UIScreen.main.scale
         if let previewLayer = previewLayer {
             view.layer.addSublayer(previewLayer)
         }
@@ -203,8 +212,17 @@ class CameraViewController: UIViewController {
     }
 
     @objc private func captureTapped() {
+        guard let output = photoOutput else { return }
         let settings = AVCapturePhotoSettings()
-        photoOutput?.capturePhoto(with: settings, delegate: self)
+        settings.isHighResolutionPhotoEnabled = true
+        if #available(iOS 13.0, *) {
+            settings.photoQualityPrioritization = .quality
+        }
+        settings.flashMode = .off
+        if output.isAutoStillImageStabilizationSupported {
+            settings.isAutoStillImageStabilizationEnabled = true
+        }
+        output.capturePhoto(with: settings, delegate: self)
     }
 
     private func updateCaptureButtonState(enabled: Bool) {
@@ -335,8 +353,17 @@ extension CameraViewController {
         let generator = UIImpactFeedbackGenerator(style: .heavy)
         generator.impactOccurred()
 
+        guard let output = photoOutput else { return }
         let settings = AVCapturePhotoSettings()
-        photoOutput?.capturePhoto(with: settings, delegate: self)
+        settings.isHighResolutionPhotoEnabled = true
+        if #available(iOS 13.0, *) {
+            settings.photoQualityPrioritization = .quality
+        }
+        settings.flashMode = .off
+        if output.isAutoStillImageStabilizationSupported {
+            settings.isAutoStillImageStabilizationEnabled = true
+        }
+        output.capturePhoto(with: settings, delegate: self)
     }
 
     private func smoothQuad(with obs: VNRectangleObservation) -> NormalizedQuad {
