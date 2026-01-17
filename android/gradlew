@@ -1,0 +1,41 @@
+#!/usr/bin/env sh
+
+# Gradle startup script for Unix
+
+# Set default JVM options if not set
+DEFAULT_JVM_OPTS="-Xmx512m -Xms256m"
+
+# Resolve script location
+APP_HOME=$(cd "$(dirname "$0")"; pwd -P)
+
+# Locate Java
+if [ -n "$JAVA_HOME" ] ; then
+    if [ -x "$JAVA_HOME/bin/java" ] ; then
+        JAVACMD="$JAVA_HOME/bin/java"
+    else
+        echo "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME" >&2
+        echo "Please set the JAVA_HOME environment variable to the correct path." >&2
+        exit 1
+    fi
+else
+    JAVACMD=$(command -v java)
+    if [ -z "$JAVACMD" ] ; then
+        echo "ERROR: Java not found. Please install Java 17+ and/or set JAVA_HOME." >&2
+        exit 1
+    fi
+fi
+
+# OS specific support
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    CYGWIN*|MINGW*|MSYS*)
+      # Handle Windows-like environments
+      CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+      ;;
+    *)
+      CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+      ;;
+esac
+
+# Run Gradle Wrapper Main
+exec "$JAVACMD" $DEFAULT_JVM_OPTS -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
