@@ -12,4 +12,9 @@
     <string name="save_failed">Failed to save</string>
     <string name="permission_camera">Camera permission is required to take photos</string>
     <string name="permission_storage">Storage permission is required to save images</string>
+    <string name="hint_no_edges">No edges detected. Move closer and keep the camera parallel.</string>
+    <string name="btn_apply_flatten">Apply Flatten</string>
+    <string name="btn_usage">How to use</string>
+    <string name="usage_title">How to use</string>
+    <string name="usage_content">How to use:\n1. Tap \"Take Photo\" or \"Select Photo\"\n2. Aim at paper/whiteboard and hold parallel\n3. Auto-detect rectangle and auto-capture\n4. Adjust four points on the result page\n5. Tap Save to export to Photos</string>
 </resources>

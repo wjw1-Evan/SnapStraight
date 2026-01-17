@@ -39,4 +39,38 @@
         app:backgroundTint="#F44336"
         android:src="@drawable/ic_camera" />
 
+    <!-- 自动拍照进度环（与iOS一致的视觉提示） -->
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/progressIndicator"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="44dp"
+        app:indicatorSize="8dp"
+        app:trackThickness="8dp"
+        app:indicatorColor="@android:color/holo_green_light"
+        app:trackColor="#33FFFFFF"
+        app:showAnimationBehavior="fade_in"
+        app:hideAnimationBehavior="fade_out"
+        app:indeterminate="false"
+        android:visibility="visible" />
+
+    <!-- 检测提示（未检测到时淡入淡出） -->
+    <TextView
+        android:id="@+id/tvHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="160dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:text="@string/hint_no_edges"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:background="#AA000000"
+        android:visibility="gone"
+        android:elevation="2dp" />
+
 </FrameLayout>

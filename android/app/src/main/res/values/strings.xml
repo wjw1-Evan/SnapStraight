@@ -12,4 +12,9 @@
     <string name="save_failed">保存失败</string>
     <string name="permission_camera">需要相机权限才能拍照</string>
     <string name="permission_storage">需要存储权限才能保存图片</string>
+    <string name="hint_no_edges">未检测到边缘，请靠近并保持平行</string>
+    <string name="btn_apply_flatten">预览拉平</string>
+    <string name="btn_usage">使用方法</string>
+    <string name="usage_title">使用方法</string>
+    <string name="usage_content">使用方法：\n1. 点击“拍照”或“选图”\n2. 对准纸张/白板，保持平行\n3. 自动识别矩形并自动拍照\n4. 在结果页拖动四个点微调\n5. 点击保存，导出到相册</string>
 </resources>

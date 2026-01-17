@@ -12,4 +12,9 @@
     <string name="save_failed">저장 실패</string>
     <string name="permission_camera">사진을 촬영하려면 카메라 권한이 필요합니다</string>
     <string name="permission_storage">이미지를 저장하려면 저장소 권한이 필요합니다</string>
+    <string name="hint_no_edges">가장자리가 감지되지 않았습니다. 더 가까이 가고 카메라를 평행하게 유지하세요.</string>
+    <string name="btn_apply_flatten">평면화 적용</string>
+    <string name="btn_usage">사용 방법</string>
+    <string name="usage_title">사용 방법</string>
+    <string name="usage_content">사용 방법:\n1. "사진 촬영" 또는 "사진 선택"을 탭하세요\n2. 종이/화이트보드를 향해 평행을 유지하세요\n3. 직사각형 자동 감지 및 자동 촬영\n4. 결과 페이지에서 네 점을 조정\n5. 저장을 탭하여 사진으로 내보내기</string>
 </resources>

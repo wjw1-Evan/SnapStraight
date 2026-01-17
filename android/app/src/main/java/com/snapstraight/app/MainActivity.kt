@@ -45,13 +45,26 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            // 直接处理图片
-            ImageProcessor.processImage(this, it) { processedBitmap ->
-                val intent = Intent(this, ResultActivity::class.java)
-                // 传递处理后的图片
-                ResultActivity.setImageBitmap(processedBitmap)
-                startActivity(intent)
-            }
+            // 读取原图并进入结果页（支持用户微调四边形）
+            Thread {
+                try {
+                    val inputStream = contentResolver.openInputStream(it)
+                    val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+                    inputStream?.close()
+
+                    // 初始四边形（若检测失败则为默认值）
+                    val quad = if (bitmap != null) ImageProcessor.detectQuad(bitmap) else null
+
+                    runOnUiThread {
+                        val intent = Intent(this, ResultActivity::class.java)
+                        ResultActivity.setOriginalBitmap(bitmap!!)
+                        ResultActivity.setInitialQuad(quad)
+                        startActivity(intent)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }.start()
         }
     }
 

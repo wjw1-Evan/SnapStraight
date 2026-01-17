@@ -42,7 +42,7 @@ class ImageProcessor {
                 DispatchQueue.main.async { completion(image) }
                 return
             }
-            
+
             let ciImage = CIImage(cgImage: cgImage)
             if let corrected = perspectiveCorrect(ciImage, quad: quad) {
                 let enhanced = autoEnhance(corrected)
@@ -149,7 +149,7 @@ class ImageProcessor {
 
         let handler = VNImageRequestHandler(ciImage: image, orientation: orientation, options: [:])
         try? handler.perform([request])
-        guard let results = request.results as? [VNRectangleObservation], !results.isEmpty else {
+        guard let results = request.results, !results.isEmpty else {
             return nil
         }
 
@@ -201,7 +201,7 @@ class ImageProcessor {
     private static func perspectiveCorrect(_ image: CIImage, quad: NormalizedQuad) -> CIImage? {
         let extent = image.extent
         let size = extent.size
-        
+
         // Coordinates are normalized 0..1 with (0,0) at bottom-left
         // Ensure we add extent.origin as CIImage coordinate space may not start at 0,0
         let pTL = CGPoint(x: extent.origin.x + quad.topLeft.x * size.width, y: extent.origin.y + quad.topLeft.y * size.height)
@@ -217,7 +217,7 @@ class ImageProcessor {
         filter?.setValue(CIVector(cgPoint: pBL), forKey: "inputBottomLeft")
 
         guard let output = filter?.outputImage else { return nil }
-        
+
         // CIPerspectiveCorrection output content sits at its own extent.
         // We translate it to 0,0 and crop to its size to ensure a clean result.
         let outExtent = output.extent

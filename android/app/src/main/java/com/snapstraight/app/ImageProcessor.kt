@@ -49,7 +49,7 @@ object ImageProcessor {
                 val inputStream = context.contentResolver.openInputStream(uri)
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream?.close()
-                
+
                 val processed = processImageInternal(bitmap)
                 withContext(Dispatchers.Main) {
                     onComplete(processed)
@@ -125,8 +125,8 @@ object ImageProcessor {
         // 5. 如果之前缩小了图片，现在需要对原图应用相同的变换
         val finalResult = if (scale < 1.0 && corners != null && corners.size == 4) {
             // 将角点坐标还原到原始尺寸
-            val originalCorners = corners.map { 
-                Point(it.x / scale, it.y / scale) 
+            val originalCorners = corners.map {
+                Point(it.x / scale, it.y / scale)
             }
             val warpedOriginal = perspectiveTransform(src, originalCorners)
             autoEnhance(warpedOriginal)

@@ -48,7 +48,10 @@ class ResultViewController: UIViewController {
         backButton.setTitleColor(.white, for: .normal)
         backButton.backgroundColor = UIColor(white: 0, alpha: 0.5)
         backButton.layer.cornerRadius = 8
-        backButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
+        // 使用UIButton.Configuration以规避contentEdgeInsets弃用警告
+        var backConfig = UIButton.Configuration.plain()
+        backConfig.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+        backButton.configuration = backConfig
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         backButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(backButton)

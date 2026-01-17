@@ -12,4 +12,9 @@
     <string name="save_failed">Error al guardar</string>
     <string name="permission_camera">Se requiere permiso de cámara para tomar fotos</string>
     <string name="permission_storage">Se requiere permiso de almacenamiento para guardar imágenes</string>
+    <string name="hint_no_edges">No se detectaron bordes. Acérquese y mantenga la cámara paralela.</string>
+    <string name="btn_apply_flatten">Aplicar aplanado</string>
+    <string name="btn_usage">Cómo usar</string>
+    <string name="usage_title">Cómo usar</string>
+    <string name="usage_content">Cómo usar:\n1. Toque \"Tomar Foto\" o \"Seleccionar Foto\"\n2. Apunte a papel/pizarra y mantenga paralelo\n3. Detección automática de rectángulo y captura automática\n4. Ajuste los cuatro puntos en la página de resultado\n5. Toque Guardar para exportar a Fotos</string>
 </resources>

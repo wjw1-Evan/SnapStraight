@@ -12,4 +12,9 @@
     <string name="save_failed">保存に失敗しました</string>
     <string name="permission_camera">写真を撮るにはカメラの許可が必要です</string>
     <string name="permission_storage">画像を保存するにはストレージの許可が必要です</string>
+    <string name="hint_no_edges">エッジが検出されません。近づいてカメラを平行に保ってください。</string>
+    <string name="btn_apply_flatten">平面化を適用</string>
+    <string name="btn_usage">使い方</string>
+    <string name="usage_title">使い方</string>
+    <string name="usage_content">使い方:\n1. 「撮影」または「写真を選択」をタップ\n2. 紙/ホワイトボードに向け、平行を保つ\n3. 長方形を自動検出して自動撮影\n4. 結果ページで4点を調整\n5. 保存をタップして写真にエクスポート</string>
 </resources>

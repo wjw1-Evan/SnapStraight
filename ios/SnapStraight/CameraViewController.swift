@@ -179,7 +179,10 @@ class CameraViewController: UIViewController {
         backButton.setTitleColor(.white, for: .normal)
         backButton.backgroundColor = UIColor(white: 0, alpha: 0.5)
         backButton.layer.cornerRadius = 8
-        backButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
+        // 使用UIButton.Configuration在iOS 15+中设置contentInsets，避免弃用警告
+        var backConfig = UIButton.Configuration.plain()
+        backConfig.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+        backButton.configuration = backConfig
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         backButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(backButton)
@@ -219,9 +222,6 @@ class CameraViewController: UIViewController {
             settings.photoQualityPrioritization = .quality
         }
         settings.flashMode = .off
-        if output.isStillImageStabilizationSupported {
-            settings.isAutoStillImageStabilizationEnabled = true
-        }
         output.capturePhoto(with: settings, delegate: self)
     }
 
@@ -360,9 +360,6 @@ extension CameraViewController {
             settings.photoQualityPrioritization = .quality
         }
         settings.flashMode = .off
-        if output.isStillImageStabilizationSupported {
-            settings.isAutoStillImageStabilizationEnabled = true
-        }
         output.capturePhoto(with: settings, delegate: self)
     }
 
@@ -546,7 +543,7 @@ extension CameraViewController {
         )
         try? handler.perform([request])
 
-        guard let results = request.results as? [VNRectangleObservation], !results.isEmpty else {
+        guard let results = request.results, !results.isEmpty else {
             return nil
         }
 
