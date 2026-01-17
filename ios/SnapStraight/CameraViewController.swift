@@ -219,7 +219,7 @@ class CameraViewController: UIViewController {
             settings.photoQualityPrioritization = .quality
         }
         settings.flashMode = .off
-        if output.isAutoStillImageStabilizationSupported {
+        if output.isStillImageStabilizationSupported {
             settings.isAutoStillImageStabilizationEnabled = true
         }
         output.capturePhoto(with: settings, delegate: self)
@@ -360,7 +360,7 @@ extension CameraViewController {
             settings.photoQualityPrioritization = .quality
         }
         settings.flashMode = .off
-        if output.isAutoStillImageStabilizationSupported {
+        if output.isStillImageStabilizationSupported {
             settings.isAutoStillImageStabilizationEnabled = true
         }
         output.capturePhoto(with: settings, delegate: self)

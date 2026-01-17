@@ -27,6 +27,16 @@ object ImageProcessor {
     }
 
     /**
+     * 归一化四边形（与iOS一致：坐标范围0..1，原点位于左下）
+     */
+    data class NormalizedQuad(
+        val topLeft: Point,
+        val topRight: Point,
+        val bottomRight: Point,
+        val bottomLeft: Point
+    )
+
+    /**
      * 处理图片（从Uri）
      */
     suspend fun processImage(
@@ -143,6 +153,64 @@ object ImageProcessor {
     }
 
     /**
+     * 从Bitmap检测文档四边形，返回归一化坐标系（0..1，左下为原点）
+     */
+    fun detectQuad(bitmap: Bitmap): NormalizedQuad? {
+        val src = Mat()
+        Utils.bitmapToMat(bitmap, src)
+
+        // 统一缩放以提高稳定性与速度
+        val processed = Mat()
+        val scale = 1000.0 / maxOf(src.width(), src.height())
+        if (scale < 1.0) {
+            Imgproc.resize(src, processed, Size(), scale, scale, Imgproc.INTER_AREA)
+        } else {
+            src.copyTo(processed)
+        }
+
+        val corners = detectEdges(processed)
+
+        // 将角点转换到原始尺寸，并归一化（注意Android图像坐标y向下，需要翻转为左下原点）
+        val quad = corners?.map { p ->
+            val px = p.x / (processed.width())
+            val py = p.y / (processed.height())
+            // 归一化到0..1，翻转y
+            Point(px, 1.0 - py)
+        }
+
+        src.release(); processed.release()
+
+        return if (quad != null && quad.size == 4) {
+            NormalizedQuad(quad[0], quad[1], quad[2], quad[3])
+        } else null
+    }
+
+    /**
+     * 使用用户指定的归一化四边形进行透视矫正与增强
+     */
+    fun processImageWithQuad(bitmap: Bitmap, quad: NormalizedQuad): Bitmap {
+        val src = Mat()
+        Utils.bitmapToMat(bitmap, src)
+
+        // 将归一化坐标映射到图像像素坐标（Android图像原点在左上，故需要再翻回）
+        val tl = Point(quad.topLeft.x * src.width(), (1.0 - quad.topLeft.y) * src.height())
+        val tr = Point(quad.topRight.x * src.width(), (1.0 - quad.topRight.y) * src.height())
+        val br = Point(quad.bottomRight.x * src.width(), (1.0 - quad.bottomRight.y) * src.height())
+        val bl = Point(quad.bottomLeft.x * src.width(), (1.0 - quad.bottomLeft.y) * src.height())
+
+        val warped = perspectiveTransform(src, listOf(tl, tr, br, bl))
+        val enhanced = autoEnhance(warped)
+
+        val resultBitmap = Bitmap.createBitmap(
+            enhanced.width(), enhanced.height(), Bitmap.Config.ARGB_8888
+        )
+        Utils.matToBitmap(enhanced, resultBitmap)
+
+        src.release(); warped.release(); enhanced.release()
+        return resultBitmap
+    }
+
+    /**
      * 边缘检测，找到文档的四个角点
      */
     private fun detectEdges(src: Mat): List<Point>? {
@@ -211,13 +279,15 @@ object ImageProcessor {
      * 对四个角点排序：左上、右上、右下、左下
      */
     private fun orderPoints(points: List<Point>): List<Point> {
+        // 更稳健的角点排序：按x+y找到左上与右下，剩余两点根据x比较确定右上与左下
         val sorted = points.sortedBy { it.x + it.y }
-        val topLeft = sorted[0]
-        val bottomRight = sorted[3]
+        val topLeft = sorted.first()
+        val bottomRight = sorted.last()
 
-        val remaining = listOf(sorted[1], sorted[2])
-        val topRight = if (remaining[0].x > remaining[1].x) remaining[0] else remaining[1]
-        val bottomLeft = if (remaining[0].x < remaining[1].x) remaining[0] else remaining[1]
+        val remaining = points.filter { it != topLeft && it != bottomRight }
+        val (p1, p2) = remaining
+        val topRight = if (p1.x > p2.x) p1 else p2
+        val bottomLeft = if (p1.x > p2.x) p2 else p1
 
         return listOf(topLeft, topRight, bottomRight, bottomLeft)
     }
