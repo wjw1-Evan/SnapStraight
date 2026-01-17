@@ -56,14 +56,13 @@ class ResultViewController: UIViewController {
         // 图片预览
         imageView.image = originalImage
         imageView.contentMode = .scaleAspectFit
-        imageView.isUserInteractionEnabled = true // Required for subview interactions
+        imageView.isUserInteractionEnabled = true  // Required for subview interactions
         imageView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(imageView)
 
         // 覆盖层（四边形可拖拽） - 改为 imageView 的子视图，确保坐标系绝对对齐
         overlayView.translatesAutoresizingMaskIntoConstraints = false
         imageView.addSubview(overlayView)
-
 
         saveButton.setTitle(NSLocalizedString("btn_save", comment: "保存"), for: .normal)
         saveButton.titleLabel?.font = UIFont.systemFont(ofSize: 22, weight: .medium)
@@ -73,6 +72,9 @@ class ResultViewController: UIViewController {
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
         saveButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(saveButton)
+
+        // 确保返回按钮在最上层，避免被大图层遮挡导致点击无效
+        view.bringSubviewToFront(backButton)
 
         NSLayoutConstraint.activate([
             backButton.topAnchor.constraint(
@@ -103,16 +105,18 @@ class ResultViewController: UIViewController {
         navigationController?.popViewController(animated: true)
     }
 
-
     @objc private func saveTapped() {
         guard let quad = overlayView.currentNormalizedQuad(in: imageView, image: originalImage)
         else { return }
-        
+
         // Show processing alert
-        let alert = UIAlertController(title: nil, message: NSLocalizedString("processing", comment: ""), preferredStyle: .alert)
+        let alert = UIAlertController(
+            title: nil, message: NSLocalizedString("processing", comment: ""),
+            preferredStyle: .alert)
         present(alert, animated: true)
 
-        ImageProcessor.processImageWithQuad(originalImage, quad: quad) { [weak self] processedImage in
+        ImageProcessor.processImageWithQuad(originalImage, quad: quad) {
+            [weak self] processedImage in
             PHPhotoLibrary.shared().performChanges({
                 PHAssetChangeRequest.creationRequestForAsset(from: processedImage)
             }) { [weak self] success, error in

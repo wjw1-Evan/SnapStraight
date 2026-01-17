@@ -18,13 +18,12 @@ class CameraViewController: UIViewController {
     private var hasDetectedRectangle = false
     private var isSessionConfigured = false
     private var lastNormalizedQuad: NormalizedQuad?
-    
+
     // Auto-Capture Properties
     private var stabilityCounter = 0
-    private let stabilityThreshold = 25 // Increase to approx 0.8s for better precision
+    private let stabilityThreshold = 25  // Increase to approx 0.8s for better precision
     private var isAutoCapturing = false
     private let progressLayer = CAShapeLayer()
-
 
     private let backButton = UIButton(type: .system)
     private let captureButton = UIButton(type: .system)
@@ -34,7 +33,7 @@ class CameraViewController: UIViewController {
         checkCameraAuthorization()
         setupUI()
     }
-    
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         updateProgressFrame()
@@ -112,7 +111,9 @@ class CameraViewController: UIViewController {
         if session.canAddOutput(videoOutput) {
             session.addOutput(videoOutput)
             // Explicitly set video orientation to portrait to align with Vision coordinates
-            if let connection = videoOutput.connection(with: .video), connection.isVideoOrientationSupported {
+            if let connection = videoOutput.connection(with: .video),
+                connection.isVideoOrientationSupported
+            {
                 connection.videoOrientation = .portrait
             }
             self.videoOutput = videoOutput
@@ -156,7 +157,7 @@ class CameraViewController: UIViewController {
         detectionOverlay.frame = view.bounds
         // 已根据用户反馈移除黄色框显示，仅保留后台检测逻辑与进度条
         // view.layer.addSublayer(detectionOverlay)
-        
+
         setupProgressLayer()
     }
 
@@ -236,12 +237,17 @@ extension CameraViewController: AVCapturePhotoCaptureDelegate {
             originalImage: image,
             initialQuad: lastNormalizedQuad?.asProcessorQuad()
         )
-        self.navigationController?.pushViewController(resultVC, animated: true)
-        
-        // Reset state
-        isAutoCapturing = false
-        stabilityCounter = 0
-        updateProgressLayer()
+
+        // 所有 UI 操作必须在主线程执行，避免导航栈卡住导致“返回”无响应
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.navigationController?.pushViewController(resultVC, animated: true)
+
+            // Reset state
+            self.isAutoCapturing = false
+            self.stabilityCounter = 0
+            self.updateProgressLayer()
+        }
     }
 }
 
@@ -278,7 +284,7 @@ extension CameraViewController {
             hasDetectedRectangle = false
             updateCaptureButtonState(enabled: false)
             lastNormalizedQuad = nil
-            
+
             // Reset auto capture
             stabilityCounter = 0
             updateProgressLayer()
@@ -286,16 +292,18 @@ extension CameraViewController {
         }
         let smoothed = smoothQuad(with: obs)
         let path = UIBezierPath()
-        
+
         // Vision coordinates are normalized with (0,0) at bottom-left.
         // CaptureDevicePoint coordinates are normalized with (0,0) at top-left.
         // We need to flip Y.
         func flipY(_ p: CGPoint) -> CGPoint { CGPoint(x: p.x, y: 1 - p.y) }
-        
+
         let tl = previewLayer.layerPointConverted(fromCaptureDevicePoint: flipY(smoothed.topLeft))
         let tr = previewLayer.layerPointConverted(fromCaptureDevicePoint: flipY(smoothed.topRight))
-        let br = previewLayer.layerPointConverted(fromCaptureDevicePoint: flipY(smoothed.bottomRight))
-        let bl = previewLayer.layerPointConverted(fromCaptureDevicePoint: flipY(smoothed.bottomLeft))
+        let br = previewLayer.layerPointConverted(
+            fromCaptureDevicePoint: flipY(smoothed.bottomRight))
+        let bl = previewLayer.layerPointConverted(
+            fromCaptureDevicePoint: flipY(smoothed.bottomLeft))
         path.move(to: tl)
         path.addLine(to: tr)
         path.addLine(to: br)
@@ -323,10 +331,10 @@ extension CameraViewController {
         isAutoCapturing = true
         stabilityCounter = 0
         updateProgressLayer()
-        
+
         let generator = UIImpactFeedbackGenerator(style: .heavy)
         generator.impactOccurred()
-        
+
         let settings = AVCapturePhotoSettings()
         photoOutput?.capturePhoto(with: settings, delegate: self)
     }
@@ -350,18 +358,18 @@ extension CameraViewController {
         let dx = newCenter.x - lastCenter.x
         let dy = newCenter.y - lastCenter.y
         let moveDist = sqrt(dx * dx + dy * dy)
-        
+
         if moveDist > 0.3 {
             lastNormalizedQuad = newQuad
-            stabilityCounter = 0 // Reset stability if moved too much
+            stabilityCounter = 0  // Reset stability if moved too much
             return newQuad
         }
-        
+
         // Check for stability
-        if moveDist < 0.02 { // Very stable
-             stabilityCounter += 1
-        } else if moveDist > 0.05 { // Slightly moving, pause or reset? let's reset to be strict
-             stabilityCounter = 0 // max(0, stabilityCounter - 1)
+        if moveDist < 0.02 {  // Very stable
+            stabilityCounter += 1
+        } else if moveDist > 0.05 {  // Slightly moving, pause or reset? let's reset to be strict
+            stabilityCounter = 0  // max(0, stabilityCounter - 1)
         }
 
         let alpha: CGFloat = 0.3  // 越小越平滑
@@ -501,7 +509,7 @@ extension CameraViewController {
         request.maximumAspectRatio = config.maxAspect
         request.minimumSize = config.minSize
         request.minimumConfidence = config.minConfidence
-        request.maximumObservations = 16 // Increase to check more candidates
+        request.maximumObservations = 16  // Increase to check more candidates
         request.quadratureTolerance = config.quadratureTolerance
 
         let handler = VNImageRequestHandler(
@@ -546,10 +554,10 @@ extension CameraViewController {
 
         // 面积权重：大幅提升面积权重，避免背景中的小矩形干扰
         let areaBoost = pow(Float(area), 0.7) * 2.0
-        
+
         // 形状权重：越接近矩形（通过 Vision 内部评分或长宽比合理性）
         // 这里简单用长宽比分段
-        let aspectWeight: Float = (aspect > 1.0 && aspect < 1.6) ? 1.2 : 1.0 // 接近 A4 比例加权
+        let aspectWeight: Float = (aspect > 1.0 && aspect < 1.6) ? 1.2 : 1.0  // 接近 A4 比例加权
 
         return confidence * Float(centerWeight * aspectPenalty) * areaBoost * aspectWeight
     }
@@ -564,34 +572,35 @@ extension CameraViewController {
         progressLayer.lineCap = .round
         progressLayer.strokeEnd = 0
         progressLayer.frame = captureButton.bounds
-        
+
         // Create circular path matching capture button
         let path = UIBezierPath(ovalIn: captureButton.bounds.insetBy(dx: -5, dy: -5))
         progressLayer.path = path.cgPath
-        
+
         // Add to capture button's superview so it sits around it
         captureButton.superview?.layer.addSublayer(progressLayer)
         // Center it relative to capture button
         // Since we added it to superview, we need to correct position
         // Ideally add it to captureButton but it clips. Let's add top level.
     }
-    
+
     fileprivate func updateProgressLayer() {
         // Re-layout if needed in viewDidLayoutSubviews, but for now just update stroke
         let progress = CGFloat(stabilityCounter) / CGFloat(stabilityThreshold)
         progressLayer.strokeEnd = progress
-        
+
         if progress > 0 {
-             progressLayer.strokeColor = (stabilityCounter >= stabilityThreshold) ? UIColor.white.cgColor : UIColor.green.cgColor
+            progressLayer.strokeColor =
+                (stabilityCounter >= stabilityThreshold)
+                ? UIColor.white.cgColor : UIColor.green.cgColor
         }
     }
-    
+
     fileprivate func updateProgressFrame() {
         progressLayer.frame = captureButton.frame.insetBy(dx: -8, dy: -8)
         progressLayer.path = UIBezierPath(ovalIn: progressLayer.bounds).cgPath
     }
 }
-
 
 extension CGPoint {
     fileprivate func lerp(to: CGPoint, alpha: CGFloat) -> CGPoint {
