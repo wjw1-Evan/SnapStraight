@@ -50,9 +50,8 @@
         app:trackThickness="8dp"
         app:indicatorColor="@android:color/holo_green_light"
         app:trackColor="#33FFFFFF"
-        app:showAnimationBehavior="fade_in"
-        app:hideAnimationBehavior="fade_out"
-        app:indeterminate="false"
+        app:showAnimationBehavior="outward"
+        app:hideAnimationBehavior="inward"
         android:visibility="visible" />
 
     <!-- 检测提示（未检测到时淡入淡出） -->

@@ -11,8 +11,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url "https://jitpack.io" }
+        maven { url "https://raw.githubusercontent.com/opencv/opencv/4.x/maven/" }
     }
 }
 
 rootProject.name = "SnapStraight"
-include ':app'
+include ':app', ':opencv'
