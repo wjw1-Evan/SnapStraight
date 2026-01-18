@@ -56,7 +56,7 @@ class CameraViewController: UIViewController {
         // 模拟器环境不支持真实相机采集，直接提示不可用并禁用拍照
         handleCameraUnavailable(reason: NSLocalizedString("camera_unavailable", comment: ""))
         return
-        #endif
+        #else
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             setupCamera()
@@ -75,6 +75,7 @@ class CameraViewController: UIViewController {
             handleCameraUnavailable(
                 reason: NSLocalizedString("camera_permission_denied", comment: ""))
         }
+        #endif
     }
 
     private func setupCamera() {
