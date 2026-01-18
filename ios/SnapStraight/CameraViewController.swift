@@ -52,6 +52,11 @@ class CameraViewController: UIViewController {
     }
 
     private func checkCameraAuthorization() {
+        #if targetEnvironment(simulator)
+        // 模拟器环境不支持真实相机采集，直接提示不可用并禁用拍照
+        handleCameraUnavailable(reason: NSLocalizedString("camera_unavailable", comment: ""))
+        return
+        #endif
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             setupCamera()
