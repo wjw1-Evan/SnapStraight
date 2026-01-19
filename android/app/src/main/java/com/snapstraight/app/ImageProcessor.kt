@@ -359,10 +359,18 @@ object ImageProcessor {
         val enhanced = Mat()
         Imgproc.cvtColor(lab, enhanced, Imgproc.COLOR_Lab2BGR)
 
+        // 轻量锐化（Unsharp Mask）：在不显著增加噪点的前提下提高清晰度
+        val blurred = Mat()
+        Imgproc.GaussianBlur(enhanced, blurred, Size(0.0, 0.0), 1.2)
+        val sharpened = Mat()
+        Core.addWeighted(enhanced, 1.15, blurred, -0.15, 0.0, sharpened)
+
         // 释放资源
         lab.release()
         channels.forEach { it.release() }
+        enhanced.release()
+        blurred.release()
 
-        return enhanced
+        return sharpened
     }
 }

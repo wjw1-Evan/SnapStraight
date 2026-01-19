@@ -204,10 +204,18 @@ class ImageProcessor {
 
         // Coordinates are normalized 0..1 with (0,0) at bottom-left
         // Ensure we add extent.origin as CIImage coordinate space may not start at 0,0
-        let pTL = CGPoint(x: extent.origin.x + quad.topLeft.x * size.width, y: extent.origin.y + quad.topLeft.y * size.height)
-        let pTR = CGPoint(x: extent.origin.x + quad.topRight.x * size.width, y: extent.origin.y + quad.topRight.y * size.height)
-        let pBR = CGPoint(x: extent.origin.x + quad.bottomRight.x * size.width, y: extent.origin.y + quad.bottomRight.y * size.height)
-        let pBL = CGPoint(x: extent.origin.x + quad.bottomLeft.x * size.width, y: extent.origin.y + quad.bottomLeft.y * size.height)
+        let pTL = CGPoint(
+            x: extent.origin.x + quad.topLeft.x * size.width,
+            y: extent.origin.y + quad.topLeft.y * size.height)
+        let pTR = CGPoint(
+            x: extent.origin.x + quad.topRight.x * size.width,
+            y: extent.origin.y + quad.topRight.y * size.height)
+        let pBR = CGPoint(
+            x: extent.origin.x + quad.bottomRight.x * size.width,
+            y: extent.origin.y + quad.bottomRight.y * size.height)
+        let pBL = CGPoint(
+            x: extent.origin.x + quad.bottomLeft.x * size.width,
+            y: extent.origin.y + quad.bottomLeft.y * size.height)
 
         let filter = CIFilter(name: "CIPerspectiveCorrection")
         filter?.setValue(image, forKey: kCIInputImageKey)
@@ -221,7 +229,8 @@ class ImageProcessor {
         // CIPerspectiveCorrection output content sits at its own extent.
         // We translate it to 0,0 and crop to its size to ensure a clean result.
         let outExtent = output.extent
-        let translated = output.transformed(by: CGAffineTransform(translationX: -outExtent.origin.x, y: -outExtent.origin.y))
+        let translated = output.transformed(
+            by: CGAffineTransform(translationX: -outExtent.origin.x, y: -outExtent.origin.y))
         return translated.cropped(to: CGRect(origin: .zero, size: outExtent.size))
     }
 
@@ -246,6 +255,15 @@ class ImageProcessor {
             filter.setValue(output, forKey: kCIInputImageKey)
             if let result = filter.outputImage {
                 output = result
+            }
+        }
+        // 轻量锐化，提升文字/边缘清晰度，保持性能
+        if let unsharp = CIFilter(name: "CIUnsharpMask") {
+            unsharp.setValue(output, forKey: kCIInputImageKey)
+            unsharp.setValue(1.2, forKey: kCIInputRadiusKey)  // 小半径避免过度
+            unsharp.setValue(0.6, forKey: kCIInputIntensityKey)
+            if let sharpened = unsharp.outputImage {
+                return sharpened
             }
         }
 
