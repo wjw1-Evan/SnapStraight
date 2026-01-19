@@ -122,7 +122,10 @@ def main():
         print('Saved:', out)
 
     # Android adaptive icon foreground (transparent background)
-    android_base = generate_icon(432, include_background=False)
+    android_foreground_base = generate_icon(432, include_background=False)
+    # Android legacy fallback full icon (background + foreground)
+    android_full_base = generate_icon(432, include_background=True)
+
     mipmap_sizes = {
         'mipmap-mdpi': 108,
         'mipmap-hdpi': 162,
@@ -130,12 +133,32 @@ def main():
         'mipmap-xxhdpi': 324,
         'mipmap-xxxhdpi': 432,
     }
+
+    def make_round(img: Image.Image) -> Image.Image:
+        """Apply circular mask to produce round icon."""
+        size = img.size[0]
+        mask = Image.new('L', img.size, 0)
+        mdraw = ImageDraw.Draw(mask)
+        mdraw.ellipse([(0, 0), (size, size)], fill=255)
+        rounded = Image.new('RGBA', img.size, (0, 0, 0, 0))
+        rounded.paste(img, (0, 0), mask)
+        return rounded
+
     for folder, sz in mipmap_sizes.items():
         outdir = f"android/app/src/main/res/{folder}"
         ensure_dir(outdir)
-        out = f"{outdir}/ic_launcher_foreground.png"
-        android_base.resize((sz, sz), Image.LANCZOS).save(out, 'PNG')
-        print('Saved:', out)
+        # Adaptive foreground PNG
+        out_fg = f"{outdir}/ic_launcher_foreground.png"
+        android_foreground_base.resize((sz, sz), Image.LANCZOS).save(out_fg, 'PNG')
+        print('Saved:', out_fg)
+        # Legacy square fallback PNG
+        out_legacy = f"{outdir}/ic_launcher.png"
+        android_full_base.resize((sz, sz), Image.LANCZOS).save(out_legacy, 'PNG')
+        print('Saved:', out_legacy)
+        # Legacy round fallback PNG (API 25 uses roundIcon if provided)
+        out_round = f"{outdir}/ic_launcher_round.png"
+        make_round(android_full_base.resize((sz, sz), Image.LANCZOS)).save(out_round, 'PNG')
+        print('Saved:', out_round)
 
 
 if __name__ == '__main__':
